@@ -1,0 +1,1 @@
+Upload the README.md, workflow.json, and screenshots/ folder to your GitHub repository. The workflow is sanitized and inactive. Reconnect credentials and replace placeholders before use. Do not upload your original unsanitized export.

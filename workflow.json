@@ -1,0 +1,921 @@
+{
+  "name": "YouTube 24/7 Autopilot - Dental AI Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 18 * * 1,3,5"
+            }
+          ]
+        }
+      },
+      "id": "09ab965f-9d55-4a66-87c9-790e5efe494b",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -192,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-businessName",
+              "name": "businessName",
+              "value": "Your Dental Clinic",
+              "type": "string"
+            },
+            {
+              "id": "cfg-ownerName",
+              "name": "ownerName",
+              "value": "Clinic Owner",
+              "type": "string"
+            },
+            {
+              "id": "cfg-businessType",
+              "name": "businessType",
+              "value": "AI automation for dental clinics",
+              "type": "string"
+            },
+            {
+              "id": "cfg-niche",
+              "name": "nicheStatement",
+              "value": "I help dental clinic owners get more confirmed patient appointments and reduce missed bookings using agentic AI workflows.",
+              "type": "string"
+            },
+            {
+              "id": "cfg-services",
+              "name": "services",
+              "value": "agentic AI workflows for dental clinics: instant WhatsApp enquiry responses, patient follow-ups, appointment booking assistance, confirmations and reminders",
+              "type": "string"
+            },
+            {
+              "id": "cfg-audience",
+              "name": "targetAudience",
+              "value": "dental clinic owners and managing dentists in India and the USA",
+              "type": "string"
+            },
+            {
+              "id": "cfg-uv",
+              "name": "uniqueValue",
+              "value": "Systems that turn enquiries into confirmed appointments while the front desk team stays in control",
+              "type": "string"
+            },
+            {
+              "id": "cfg-tone",
+              "name": "tone",
+              "value": "practical, direct, conversational, plain English, short lines, no hype, no jargon",
+              "type": "string"
+            },
+            {
+              "id": "cfg-magnet",
+              "name": "leadMagnet",
+              "value": "The Dental Appointment Automation System",
+              "type": "string"
+            },
+            {
+              "id": "cfg-pillars",
+              "name": "contentPillars",
+              "value": "[\"Slow replies to patient enquiries cost appointments\",\"Agentic AI workflows that follow up on enquiries that did not book\",\"Agentic AI workflows on WhatsApp for the dental front desk\",\"Reducing no-shows with agentic AI confirmations and reminders\",\"Agentic AI workflows support your receptionist and do not replace them\",\"Missed after-hours patient enquiries and how agentic AI workflows catch them\",\"Lead management versus lead generation for dental clinics\",\"The first five dental clinic processes to hand to agentic AI workflows\",\"What agentic AI workflows actually are, in plain words for dental clinic owners\"]",
+              "type": "string"
+            },
+            {
+              "id": "cfg-cta",
+              "name": "ctaKeywords",
+              "value": "[\"BOOK\",\"FAST\",\"LEADS\",\"SMART\",\"GROW\",\"SPEED\",\"AUDIT\",\"FLOW\",\"BUILD\"]",
+              "type": "string"
+            },
+            {
+              "id": "cfg-max",
+              "name": "maxPostsPerDay",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "cfg-sheet",
+              "name": "googleSheetId",
+              "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "cfg-mail",
+              "name": "alertEmail",
+              "value": "REPLACE_WITH_YOUR_ALERT_EMAIL",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d37a0223-6331-4c48-b7e3-bef691b25fec",
+      "name": "Business Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        16,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.googleSheetId }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "youtube_posts"
+        },
+        "options": {}
+      },
+      "id": "b2569df5-0c80-47a1-93b0-b84cadfb041e",
+      "name": "Get Post History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        240,
+        -448
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Business Config').first().json;\nlet contentPillars;\ntry { contentPillars = JSON.parse(config.contentPillars); }\ncatch (e) { contentPillars = ['Slow replies to patient enquiries cost appointments', 'Agentic AI workflows that follow up on enquiries that did not book', 'Agentic AI workflows on WhatsApp for the dental front desk']; }\nlet ctaKeywords;\ntry { ctaKeywords = JSON.parse(config.ctaKeywords); }\ncatch (e) { ctaKeywords = ['BOOK', 'FAST', 'LEADS', 'SMART', 'GROW']; }\nconst today = $now.toFormat('yyyy-MM-dd');\nconst rows = $input.all().map(i => {\n  const o = {};\n  Object.keys(i.json || {}).forEach(k => { o[k.trim()] = i.json[k]; });\n  return o;\n}).filter(r => r.topic || r.date);\nconst todayPostCount = rows.filter(r => String(r.date || '').slice(0, 10) === today && String(r.status || '').trim().toLowerCase() === 'published').length;\nconst maxPosts = parseInt(config.maxPostsPerDay) || 1;\nif (todayPostCount >= maxPosts) {\n  return [{ json: { ...config, canPost: false, todayPostCount, maxPostsPerDay: maxPosts } }];\n}\nconst sorted = rows.filter(r => r.topic).sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date));\nconst recentTopics = sorted.slice(0, 7).map(r => r.topic);\nlet availableTopics = contentPillars.filter(t => !recentTopics.includes(t));\nif (availableTopics.length === 0) availableTopics = contentPillars;\nconst selectedTopic = availableTopics[Math.floor(Math.random() * availableTopics.length)];\nconst angles = [\n  'Open with a short scene: a patient messages the clinic and nobody replies in time',\n  'Unpopular opinion: your clinic may not need more leads, it needs a better process for the enquiries it already has',\n  'Give 3 signs or 3 practical actions, one per scene',\n  'Bust a common myth about AI in a dental clinic',\n  'Show how an agentic AI workflow handles one enquiry end to end: reply, follow-up, booking, reminder',\n  'Ask a thought-provoking question and answer it scene by scene',\n  'Describe what you would hand to agentic AI workflows first if you owned the clinic'\n];\nconst selectedAngle = angles[Math.floor(Math.random() * angles.length)];\nconst ctaKeyword = ctaKeywords[Math.floor(Math.random() * ctaKeywords.length)];\nconst h = $now.hour;\nreturn [{ json: { ...config, canPost: true, todayPostCount, maxPostsPerDay: maxPosts, selectedTopic, selectedAngle, ctaKeyword, dayName: $now.toFormat('cccc'), timeSlot: h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening', generatedAt: $now.toISO() } }];"
+      },
+      "id": "2285de5b-d07b-47ce-8599-09af49d9b300",
+      "name": "Smart Topic Selector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.canPost }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "86d39066-77dc-4336-8f00-4df8da4180de",
+      "name": "Under Daily Limit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        688,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You write scripts for 40 to 50 second faceless YouTube Shorts for {{ $json.ownerName }}, {{ $json.businessName }}.\nBusiness: {{ $json.businessType }}\nPositioning: {{ $json.nicheStatement }}\nServices: {{ $json.services }}\nAudience: {{ $json.targetAudience }}\nUnique value: {{ $json.uniqueValue }}\nTone: {{ $json.tone }}\nFree lead magnet: the book \"{{ $json.leadMagnet }}\"\n\nFORMAT. Output ONLY valid JSON with no markdown and no code fences, in exactly this shape:\n{\"title\":\"...\",\"description\":\"...\",\"tags\":[\"...\"],\"scenes\":[{\"line\":\"...\",\"image\":\"...\"}]}\n\nSCRIPT RULES.\n1. Exactly 5 scenes. Each scene has one spoken line and one image prompt.\n2. The spoken lines together are 85 to 110 words. Each line is 1 or 2 short sentences, 12 to 25 words.\n3. Scene 1 is the hook: at most 14 words, naming a concrete painful situation in a dental clinic.\n4. Scenes 2 to 4 develop one idea in plain words, using tiny scenes such as a busy receptionist or a WhatsApp enquiry left unread.\n5. Scene 5 ends with the call to action: comment the keyword {{ $json.ctaKeyword }} and I will send you my free book, {{ $json.leadMagnet }}.\n6. Write the spoken lines exactly as they should be read aloud. No stage directions, no emojis, no hashtags, no asterisks, no parentheses.\n\nIMAGE RULES. Each image prompt describes one vivid vertical photorealistic scene for a modern dental clinic setting where it fits. Vary the shots. Never include text, letters, numbers, logos or screens with readable words. No close-up faces and no recognisable real people.\n\nTITLE: plain English, curiosity, at most 90 characters, no hashtags, no emojis.\nDESCRIPTION: 2 or 3 short lines, then one line with the call to action using the keyword {{ $json.ctaKeyword }}, then a final line with exactly these hashtags: #Shorts #AgenticAI #AIAutomation #DentalClinic\nTAGS: 6 to 8 short keywords.\n\nCONTENT RULES.\n- Never name any software, tool, platform or vendor used to build the workflows. Do not write n8n, Zapier, Make, OpenAI, ChatGPT, GPT or similar. Refer to the technology only as agentic AI workflows, AI agents or AI automation.\n- Make agentic AI workflows the focus. Use the exact phrase agentic AI workflows at least once in the spoken lines and once in the description, and explain it in plain words: AI that handles a task end to end, such as replying to an enquiry, following up and booking, while the front desk team stays in control.\n- Never invent statistics, client names, testimonials or results. If you use numbers, say they are hypothetical.\n- Do not claim a team, agency or company. The author works solo, so use I and my, never we and our.\n- Present AI as support for the front desk team. Never say it replaces receptionists, and never suggest AI diagnoses patients or makes clinical decisions.\n- Readers are dental clinic owners in India and the USA. Use simple global English. Avoid currency and country specific claims.\n- Never use the phrases \"In the digital age\", \"Exciting news\", \"game changer\", \"unlock\" or \"revolutionize\".\n- Write in first person as one real practitioner. It must never sound like AI."
+            },
+            {
+              "content": "=Write a YouTube Short script about: {{ $json.selectedTopic }}\nWriting angle: {{ $json.selectedAngle }}\nCall to action keyword: {{ $json.ctaKeyword }}\nIt is {{ $json.dayName }} {{ $json.timeSlot }}."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 1200,
+          "temperature": 0.85
+        }
+      },
+      "id": "b7bf28c5-5735-4671-98ac-4b63260fd46d",
+      "name": "Generate YouTube Script",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output[0].content[0].text;\nconst fence = String.fromCharCode(96).repeat(3);\nconst cleaned = String(raw).split(fence + 'json').join('').split(fence).join('').trim();\nlet data;\ntry { data = JSON.parse(cleaned); }\ncatch (e) { throw new Error('The script came back as invalid JSON: ' + cleaned.slice(0, 200)); }\nconst scenes = (data.scenes || []).slice(0, 5);\nif (scenes.length < 5) throw new Error('The script has fewer than 5 scenes.');\nconst clean = (s) => String(s || '').split('*').join('').trim();\nconst banned = ['n8n', 'zapier', 'openai', 'chatgpt', 'gpt'];\nconst everything = (clean(data.title) + ' ' + clean(data.description) + ' ' + scenes.map(s => clean(s.line)).join(' ')).toLowerCase();\nbanned.forEach(w => { if (everything.includes(w)) throw new Error('The script names a tool: ' + w); });\nlet title = clean(data.title).split('#').join('').trim();\nif (title.length > 95) title = title.slice(0, 95).trim();\nlet description = clean(data.description);\nif (!description.includes('#Shorts')) description = description + '\\n\\n#Shorts #AgenticAI #AIAutomation #DentalClinic';\nconst tags = (Array.isArray(data.tags) ? data.tags : []).map(t => clean(t).split(',').join(' ')).filter(Boolean).slice(0, 8).join(',');\nconst suffix = ', photorealistic, vertical composition, no text, no letters, no logos, no recognisable real people';\nconst elements = scenes.map((s, i) => ({\n  type: 'composition',\n  track: 1,\n  elements: [\n    {\n      type: 'image',\n      provider: 'openai model=gpt-image-1-mini size=1024x1536',\n      source: clean(s.image) + suffix,\n      fit: 'cover',\n      clip: true,\n      animations: [{ easing: 'linear', type: 'scale', scope: 'element', start_scale: '120%', end_scale: '100%', fade: false }]\n    },\n    { type: 'audio', name: 'Voice' + (i + 1), provider: \"openai model=tts-1 voice='alloy'\", source: clean(s.line) },\n    {\n      type: 'text',\n      transcript_source: 'Voice' + (i + 1),\n      transcript_effect: 'highlight',\n      x: '50%',\n      y: '78%',\n      width: '86%',\n      fill_color: '#ffffff',\n      stroke_color: '#000000',\n      stroke_width: '1.2 vmin',\n      font_size: '6.5 vmin',\n      font_weight: '800',\n      text: 'placeholder'\n    }\n  ]\n}));\nreturn [{ json: {\n  renderBody: { render_scale: 1, source: { output_format: 'mp4', width: 720, height: 1280, frame_rate: 25, elements } },\n  title,\n  description,\n  tags,\n  imagePrompts: scenes.map(s => clean(s.image)).join(' | '),\n  voiceover: scenes.map(s => clean(s.line)).join(' ')\n} }];"
+      },
+      "id": "5f383385-d2f6-44c0-acc5-f788c9daf2f6",
+      "name": "Build RenderScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.creatomate.com/v2/renders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.renderBody) }}",
+        "options": {}
+      },
+      "id": "e6acc765-0061-42cb-91ca-6899b893f210",
+      "name": "Start Render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1504,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 75
+      },
+      "id": "7590c6be-dbde-4224-b95a-2885074a8f9d",
+      "name": "Wait for Render 1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1744,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v2/renders/{{ $(\"Start Render\").first().json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a70735be-6bd4-46b4-bcb7-5b1694a235e8",
+      "name": "Check Render 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1984,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "succeeded"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0513caac-007f-43eb-bed4-fe2736346cf2",
+      "name": "Render Done 1?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "80a0e434-bf1c-46c7-86f3-fc16ad0de86d",
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2704,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $(\"Build RenderScript\").first().json.title }}",
+        "regionCode": "IN",
+        "categoryId": "22",
+        "options": {
+          "description": "={{ $(\"Build RenderScript\").first().json.description }}",
+          "notifySubscribers": false,
+          "privacyStatus": "unlisted",
+          "selfDeclaredMadeForKids": false,
+          "tags": "={{ $(\"Build RenderScript\").first().json.tags }}"
+        }
+      },
+      "id": "cd0657ae-f22f-4559-b7e7-2d1b1cf82245",
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        2944,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $(\"Business Config\").first().json.googleSheetId }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "youtube_posts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ $now.toFormat(\"yyyy-MM-dd\") }}",
+            "topic": "={{ $(\"Smart Topic Selector\").first().json.selectedTopic }}",
+            "angle": "={{ $(\"Smart Topic Selector\").first().json.selectedAngle }}",
+            "postText": "={{ $(\"Build RenderScript\").first().json.title }} | {{ $(\"Build RenderScript\").first().json.voiceover }}",
+            "imagePrompt": "={{ $(\"Build RenderScript\").first().json.imagePrompts }}",
+            "imageUrl": "={{ $json.uploadId ? \"https://youtube.com/shorts/\" + $json.uploadId : \"\" }}",
+            "linkedinPostId": "={{ $json.uploadId || $json.id || \"published\" }}",
+            "timestamp": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "angle",
+              "displayName": "angle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "postText",
+              "displayName": "postText",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "imagePrompt",
+              "displayName": "imagePrompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "imageUrl",
+              "displayName": "imageUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "linkedinPostId",
+              "displayName": "linkedinPostId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "   status",
+              "displayName": "   status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "5b3e0ca6-770c-485d-9ef8-5e63cb8f739f",
+      "name": "Log Post to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3184,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "79ce95d5-0bb9-4075-b29d-1d63574faedc",
+      "name": "Wait for Render 2",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v2/renders/{{ $(\"Start Render\").first().json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "a9d63821-e8f8-40e7-b813-7240b727cbbf",
+      "name": "Check Render 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2704,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "succeeded"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "445decf2-4114-4b4e-8b02-a391757e2a1d",
+      "name": "Render Done 2?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2944,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 90
+      },
+      "id": "63f1dc55-fc3a-4a94-888e-4463197db706",
+      "name": "Wait for Render 3",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3184,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.creatomate.com/v2/renders/{{ $(\"Start Render\").first().json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "22ea3254-e0ba-4701-a88f-7c3861b34c4d",
+      "name": "Check Render 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3424,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "succeeded"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "54502463-0645-4e39-9040-1be3e883509e",
+      "name": "Render Done 3?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3664,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "=The video render did not finish in time. Status: {{ $json.status }} {{ $json.error_message || \"\" }}"
+      },
+      "id": "18b4be88-c993-4a4b-8e23-fb4b73390dfb",
+      "name": "Render Did Not Finish",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        3904,
+        608
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1eeb3c92-7334-4d53-8c73-5f6158e1943b",
+      "name": "On Workflow Error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "REPLACE_WITH_YOUR_ALERT_EMAIL",
+        "subject": "YouTube Autopilot Error - Action Required",
+        "message": "=<h2 style=\"color:#e94560;\">Workflow Error Alert</h2><p><strong>Workflow:</strong> {{ $json.workflow.name }}</p><p><strong>Error:</strong> {{ $json.execution.error.message }}</p><p><strong>Node:</strong> {{ $json.execution.lastNodeExecuted || \"Unknown\" }}</p><p><strong>Time:</strong> {{ $now.toFormat(\"dd LLL yyyy, hh:mm a\") }}</p><p><a href=\"{{ $json.execution.url }}\">View execution in n8n</a></p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "4f983544-343b-499a-a9d0-1b7fc65220f7",
+      "name": "Send Error Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        880
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Business Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Config": {
+      "main": [
+        [
+          {
+            "node": "Get Post History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Post History": {
+      "main": [
+        [
+          {
+            "node": "Smart Topic Selector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Smart Topic Selector": {
+      "main": [
+        [
+          {
+            "node": "Under Daily Limit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Under Daily Limit?": {
+      "main": [
+        [
+          {
+            "node": "Generate YouTube Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate YouTube Script": {
+      "main": [
+        [
+          {
+            "node": "Build RenderScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build RenderScript": {
+      "main": [
+        [
+          {
+            "node": "Start Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Render": {
+      "main": [
+        [
+          {
+            "node": "Wait for Render 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Render 1": {
+      "main": [
+        [
+          {
+            "node": "Check Render 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Render 1": {
+      "main": [
+        [
+          {
+            "node": "Render Done 1?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Done 1?": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Render 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to YouTube": {
+      "main": [
+        [
+          {
+            "node": "Log Post to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Render 2": {
+      "main": [
+        [
+          {
+            "node": "Check Render 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Render 2": {
+      "main": [
+        [
+          {
+            "node": "Render Done 2?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Done 2?": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Render 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Render 3": {
+      "main": [
+        [
+          {
+            "node": "Check Render 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Render 3": {
+      "main": [
+        [
+          {
+            "node": "Render Done 3?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Done 3?": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Render Did Not Finish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On Workflow Error": {
+      "main": [
+        [
+          {
+            "node": "Send Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timezone": "Asia/Kolkata"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
