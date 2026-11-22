@@ -37,19 +37,19 @@ Dental clinics may want to publish educational short-form videos consistently, b
 ## Screenshots
 
 ### Complete workflow
-![Complete n8n workflow](screenshots/complete-workflow.png)
+![Complete n8n workflow](complete-workflow.png)
 
 ### YouTube video details
-![YouTube video details](screenshots/youtube-video-details.png)
+![YouTube video details](youtube-video-details.png)
 
 ### Script generation and rendering
-![Script generation and rendering](screenshots/script-generation-and-rendering.png)
+![Script generation and rendering](script-generation-and-rendering.png)
 
 ### Render status monitoring
-![Render status monitoring](screenshots/render-status-monitoring.png)
+![Render status monitoring](render-status-monitoring.png)
 
 ### Render and upload execution
-![Render and upload execution](screenshots/render-and-upload-execution.png)
+![Render and upload execution](render-and-upload-execution.png)
 
 ## Before you run it
 
